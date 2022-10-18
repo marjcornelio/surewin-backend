@@ -38,6 +38,10 @@ const Contract = sequelize.define("contract", {
     type: DataTypes.ENUM,
     values: ["Monthly", "Daily"],
   },
+  status: {
+    type: DataTypes.ENUM,
+    values: ["Active", "Ended"],
+  },
 });
 
 Contract.associate = (models) => {

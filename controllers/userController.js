@@ -2,20 +2,24 @@ const User = require("../models/User");
 const Tenant = require("../models/Tenant");
 const Contract = require("../models/Contract");
 const Unit = require("../models/PropertyUnit");
+const Transaction = require("../models/Transaction");
 const sequelize = require("../db/connect");
 
 const multer = require("multer");
+const fs = require("fs");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "public");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage: storage }).single("file");
+const uploadFnct = function (dest) {
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, "./public/" + dest + "/");
+    },
+    filename: (req, file, cb) => {
+      cb(null, file.originalname);
+    },
+  });
+  const upload = multer({ storage: storage }).single("file");
+  return upload;
+};
 
 const getAllUser = async (req, res) => {
   try {
@@ -37,7 +41,34 @@ const getAllTenant = async (req, res) => {
   }
 };
 
-const addTenant = async (req, res, next) => {
+const getSingleTenant = async (req, res) => {
+  try {
+    const tenant = await Tenant.findOne({ where: { id: req.params.id } });
+    const contract = await Contract.findOne({
+      where: { tenant_id: tenant.id, status: "Active" },
+    });
+    let unit = null;
+    if (contract !== null) {
+      unit = await Unit.findOne({ where: { id: contract.stall } });
+    }
+    const transactions = Transaction.findAll({
+      where: { tenant_id: tenant.id },
+    });
+    res.status(200).json({
+      success: true,
+      data: {
+        tenant: tenant,
+        contract: contract ? contract : null,
+        transactions: (await transactions) ? await transactions : null,
+        unit: unit ? unit : null,
+      },
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const addTenant = async (req, res) => {
   try {
     const {
       firstname,
@@ -60,6 +91,8 @@ const addTenant = async (req, res, next) => {
       electric,
       water,
       internet,
+      unit_status,
+      unit_id,
     } = req.body;
 
     const tenants = await Tenant.create({
@@ -87,15 +120,18 @@ const addTenant = async (req, res, next) => {
       start_date: startdate,
       end_date: enddate,
     });
+    Unit.update({ status: unit_status }, { where: { id: unit_id } });
     res.status(201).json({ success: true, msg: "Tenant Added Successfully" });
   } catch (error) {
     console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
-const uploadAvatar = async (req, res) => {
+const upload = async (req, res) => {
   try {
-    upload(req, res, (err) => {
+    console.log(req.params.type);
+    const currUpload = uploadFnct(req.params.type);
+    currUpload(req, res, (err) => {
       if (err) {
         res.send(err);
       }
@@ -116,14 +152,51 @@ const getAllUnit = async (req, res) => {
 };
 
 const addUnit = async (req, res) => {
-  console.log(req.body);
+  try {
+    const {
+      type,
+      unit_title,
+      floorArea,
+      manager,
+      image,
+      street_address,
+      province,
+      city,
+      description,
+      status,
+    } = req.body;
+    const unit = await Unit.create({
+      type: type,
+      unit_title: unit_title,
+      floorArea: floorArea,
+      manager: manager,
+      image: image,
+      street_address: street_address,
+      province: province,
+      city: city,
+      description: description,
+      status: status,
+    });
+
+    res
+      .status(201)
+      .json({ success: true, msg: "Property Unit Added Successfully" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const updateUnit = async (req, res) => {
+  Unit.update({ status });
 };
 
 module.exports = {
   getAllUser,
   getAllTenant,
+  getSingleTenant,
   addTenant,
   getAllUnit,
   addUnit,
-  uploadAvatar,
+  updateUnit,
+  upload,
 };

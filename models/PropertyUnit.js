@@ -8,14 +8,7 @@ const Unit = sequelize.define("unit", {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  user_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: "users",
-      key: "id",
-    },
-  },
+
   unit_title: {
     type: DataTypes.STRING,
   },
@@ -43,9 +36,15 @@ const Unit = sequelize.define("unit", {
   zip: {
     type: DataTypes.STRING,
   },
+  image: {
+    type: DataTypes.STRING,
+  },
+  manager: {
+    type: DataTypes.STRING,
+  },
   status: {
     type: DataTypes.ENUM,
-    values: ["vacancy", "occupied", "unavailable"],
+    values: ["vacant", "occupied", "unavailable"],
   },
 });
 

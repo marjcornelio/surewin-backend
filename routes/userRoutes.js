@@ -7,18 +7,24 @@ const authenticateToken = require("../middleware/authenticateToken");
 const {
   getAllUser,
   getAllTenant,
+  getSingleTenant,
   addTenant,
   getAllUnit,
   addUnit,
-  uploadAvatar,
+  updateUnit,
+  upload,
 } = require("../controllers/userController");
 
 router
   .get("/tenants", authenticateToken, getAllTenant)
-  .post("/tenants/add", authenticateToken, addTenant);
-router.post("/upload", authenticateToken, uploadAvatar);
+  .post("/tenants/add", authenticateToken, addTenant)
+  .get("/tenants/:id", authenticateToken, getSingleTenant);
+router.post("/upload/:type", authenticateToken, upload);
 router
-  .get("/units", authenticateToken, getAllUnit)
-  .post("/units/add", authenticateToken, addUnit);
+  .get("/property-units", authenticateToken, getAllUnit)
+  .post("/property-units/add", authenticateToken, addUnit)
+  .patch("/property-units/update", authenticateToken, updateUnit);
+
+router.get("/users", authenticateToken, getAllUser);
 
 module.exports = router;
