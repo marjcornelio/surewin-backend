@@ -7,6 +7,7 @@ const sequelize = require("../db/connect");
 
 const multer = require("multer");
 const fs = require("fs");
+const { Op } = require("sequelize");
 
 const uploadFnct = function (dest) {
   const storage = multer.diskStorage({
@@ -119,8 +120,22 @@ const addTenant = async (req, res) => {
       internet: internet,
       start_date: startdate,
       end_date: enddate,
+      status: "Active",
     });
     Unit.update({ status: unit_status }, { where: { id: unit_id } });
+    if (deposit) {
+      Transaction.create({
+        tenant_id: tenants.dataValues.id,
+        status: "Paid",
+        payment_for: "Deposit",
+        amount: deposit,
+        payment_method: "Cash",
+        payment_date: Date.now(),
+        received: deposit,
+        balance: 0,
+      });
+    }
+
     res.status(201).json({ success: true, msg: "Tenant Added Successfully" });
   } catch (error) {
     console.log(error);
@@ -190,6 +205,71 @@ const updateUnit = async (req, res) => {
   Unit.update({ status });
 };
 
+const getAllTransactions = async (req, res) => {
+  try {
+    const transactions = await Transaction.findAll();
+    console.log(transactions);
+    res.status(200).json({
+      success: true,
+      transactions: transactions,
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const getTenantTransactions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { start, end } = req.body;
+    const transactions = await Transaction.findAll({
+      where: {
+        tenant_id: id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      transactions: transactions,
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const addTransaction = async (req, res) => {
+  console.log(req.body);
+  try {
+    const {
+      tenant_id,
+      status,
+      payment_for,
+      amount,
+      method,
+      date,
+      description,
+      received,
+      balance,
+    } = req.body;
+
+    const transaction = await Transaction.create({
+      tenant_id: tenant_id,
+      status: status,
+      payment_for: payment_for,
+      amount: amount,
+      payment_method: method,
+      payment_date: date,
+      description: description,
+      received: received,
+      balance: balance,
+    });
+    res
+      .status(201)
+      .json({ success: true, msg: "Transaction Added Successfully" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
 module.exports = {
   getAllUser,
   getAllTenant,
@@ -199,4 +279,7 @@ module.exports = {
   addUnit,
   updateUnit,
   upload,
+  getAllTransactions,
+  getTenantTransactions,
+  addTransaction,
 };

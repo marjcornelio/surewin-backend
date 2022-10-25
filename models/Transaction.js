@@ -19,7 +19,13 @@ const Transaction = sequelize.define("transaction", {
   amount: {
     type: DataTypes.INTEGER,
   },
-  category: {
+  received: {
+    type: DataTypes.INTEGER,
+  },
+  balance: {
+    type: DataTypes.INTEGER,
+  },
+  payment_for: {
     type: DataTypes.STRING,
   },
   payment_method: {
@@ -31,7 +37,10 @@ const Transaction = sequelize.define("transaction", {
   },
   status: {
     type: DataTypes.ENUM,
-    values: ["Paid", "Unpaid"],
+    values: ["Paid", "Unpaid", "Partial"],
+  },
+  description: {
+    type: DataTypes.STRING,
   },
 });
 

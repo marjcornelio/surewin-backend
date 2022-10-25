@@ -13,6 +13,9 @@ const {
   addUnit,
   updateUnit,
   upload,
+  getAllTransactions,
+  getTenantTransactions,
+  addTransaction,
 } = require("../controllers/userController");
 
 router
@@ -24,6 +27,10 @@ router
   .get("/property-units", authenticateToken, getAllUnit)
   .post("/property-units/add", authenticateToken, addUnit)
   .patch("/property-units/update", authenticateToken, updateUnit);
+router
+  .get("/transactions", authenticateToken, getAllTransactions)
+  .post("/transactions/add", authenticateToken, addTransaction)
+  .get("/transactions/:id", authenticateToken, getTenantTransactions);
 
 router.get("/users", authenticateToken, getAllUser);
 
