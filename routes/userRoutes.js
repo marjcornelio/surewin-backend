@@ -9,19 +9,27 @@ const {
   getAllTenant,
   getSingleTenant,
   addTenant,
+  editTenant,
+  deleteTenant,
   getAllUnit,
   addUnit,
   updateUnit,
   upload,
   getAllTransactions,
   getTenantTransactions,
+  getAllInvoice,
+  addInvoice,
   addTransaction,
+  getTenantInvoices,
+  getAllParkingCollections,
 } = require("../controllers/userController");
 
 router
   .get("/tenants", authenticateToken, getAllTenant)
   .post("/tenants/add", authenticateToken, addTenant)
-  .get("/tenants/:id", authenticateToken, getSingleTenant);
+  .get("/tenants/:id", authenticateToken, getSingleTenant)
+  .patch("/tenants/edit/:id", authenticateToken, editTenant)
+  .delete("/tenants/delete/:id", authenticateToken, deleteTenant);
 router.post("/upload/:type", authenticateToken, upload);
 router
   .get("/property-units", authenticateToken, getAllUnit)
@@ -31,6 +39,11 @@ router
   .get("/transactions", authenticateToken, getAllTransactions)
   .post("/transactions/add", authenticateToken, addTransaction)
   .get("/transactions/:id", authenticateToken, getTenantTransactions);
+router
+  .get("/invoices", authenticateToken, getAllInvoice)
+  .post("/invoices/add", authenticateToken, addInvoice)
+  .get("/invoices/:id", authenticateToken, getTenantInvoices);
+router.get("/parking_collections", authenticateToken, getAllParkingCollections);
 
 router.get("/users", authenticateToken, getAllUser);
 

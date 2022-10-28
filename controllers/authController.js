@@ -1,24 +1,32 @@
 const User = require("../models/User");
+const Tenant = require("../models/Tenant");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const login = async (req, res) => {
-  const user = await User.findOne({
+  let user = await User.findOne({
     where: {
       email: req.body.email,
     },
   });
   if (user == null) {
-    return res.status(400).json({
-      success: false,
-      msg: "Incorrent email or password",
+    user = await Tenant.findOne({
+      where: {
+        email: req.body.email,
+      },
     });
+    if (user == null) {
+      return res.status(400).json({
+        success: false,
+        msg: "Incorrent email or password",
+      });
+    }
   }
   try {
     if (await bcrypt.compare(req.body.password, user.password)) {
       const email = user.email;
       const accessToken = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET);
-      const { firstname, lastname, middlename, user_role } = user;
+      const { firstname, lastname, middlename, user_role, id } = user;
       return res.status(200).json({
         success: true,
         accessToken: accessToken,
@@ -27,6 +35,7 @@ const login = async (req, res) => {
           lastname: lastname,
           middlename: middlename,
           user_role: user_role,
+          id: id,
         },
       });
     } else {

@@ -2,7 +2,7 @@ const { Sequelize, DataTypes, Model } = require("sequelize");
 
 const sequelize = require("../db/connect");
 
-const Contract = sequelize.define("contract", {
+const Invoice = sequelize.define("invoices", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -17,40 +17,39 @@ const Contract = sequelize.define("contract", {
       onDelete: "restrict",
     },
   },
-  stall: {
-    type: DataTypes.STRING,
+  amount_to_paid: {
+    type: DataTypes.INTEGER,
   },
-  start_date: {
-    type: DataTypes.DATE,
-  },
-  end_date: {
-    type: DataTypes.DATE,
-  },
-  deposit: {
+  received: {
     type: DataTypes.INTEGER,
   },
   balance: {
     type: DataTypes.INTEGER,
   },
-  rental_amount: {
-    type: DataTypes.INTEGER,
+  payment_for: {
+    type: DataTypes.STRING,
   },
-  rental_frequency: {
-    type: DataTypes.ENUM,
-    values: ["Monthly", "Daily"],
+  due_date: {
+    type: DataTypes.DATE,
   },
   status: {
     type: DataTypes.ENUM,
-    values: ["Active", "Ended"],
+    values: ["Paid", "Unpaid", "Partial"],
+  },
+  description: {
+    type: DataTypes.STRING,
   },
 });
 
-Contract.associate = (models) => {
-  Contract.belongsTo(
-    models.Tenant,
-    { onDelete: "Cascade" },
-    { foreignKey: { allowNull: false } }
-  );
+Invoice.associate = (models) => {
+  Invoice.belongsTo(models.Tenant, {
+    foreignKey: { allowNull: false },
+    onDelete: "Cascade",
+  });
+  Invoice.hasMany(models.Transaction, {
+    foreignKey: { allowNull: false },
+    onDelete: "Cascade",
+  });
 };
 
 sequelize
@@ -59,7 +58,7 @@ sequelize
     console.log("Table created successfully!");
   })
   .catch((error) => {
-    console.error("Unable to create table : ");
+    console.error("Unable to create table : Invoice");
   });
 
-module.exports = Contract;
+module.exports = Invoice;

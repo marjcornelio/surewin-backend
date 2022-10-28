@@ -1,6 +1,5 @@
 const { Sequelize, DataTypes, Model } = require("sequelize");
 const sequelize = require("../db/connect");
-const Contract = require("./Contract");
 
 const Tenant = sequelize.define("tenant", {
   id: {
@@ -40,11 +39,23 @@ const Tenant = sequelize.define("tenant", {
   contact_number: {
     type: DataTypes.STRING,
   },
+  username: {
+    type: DataTypes.STRING,
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  user_role: {
+    type: DataTypes.STRING,
+    defaultvalue: "tenant",
+  },
 });
 
 Tenant.associate = (models) => {
   Tenant.hasMany(models.Contract, { onDelete: "Cascade" });
   Tenant.hasMany(models.Transaction, { onDelete: "Cascade" });
+  Tenant.hasMany(models.Invoice, { onDelete: "Cascade" });
 };
 sequelize
   .sync({ alter: true })

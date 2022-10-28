@@ -54,6 +54,10 @@ const User = sequelize.define(
   { timestamps: false }
 );
 
+User.associate = (models) => {
+  User.hasMany(models.ParkingCollection, { onDelete: "Cascade" });
+};
+
 sequelize
   .sync()
   .then(() => {

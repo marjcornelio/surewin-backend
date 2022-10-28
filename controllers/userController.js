@@ -3,6 +3,8 @@ const Tenant = require("../models/Tenant");
 const Contract = require("../models/Contract");
 const Unit = require("../models/PropertyUnit");
 const Transaction = require("../models/Transaction");
+const Invoice = require("../models/Invoice");
+const ParkingCollection = require("../models/ParkingCollection");
 const sequelize = require("../db/connect");
 
 const multer = require("multer");
@@ -55,6 +57,10 @@ const getSingleTenant = async (req, res) => {
     const transactions = Transaction.findAll({
       where: { tenant_id: tenant.id },
     });
+    const invoices = Invoice.findAll({
+      where: { tenant_id: tenant.id },
+    });
+    console.log(invoices);
     res.status(200).json({
       success: true,
       data: {
@@ -62,6 +68,7 @@ const getSingleTenant = async (req, res) => {
         contract: contract ? contract : null,
         transactions: (await transactions) ? await transactions : null,
         unit: unit ? unit : null,
+        invoices: (await invoices) ? await invoices : null,
       },
     });
   } catch (error) {
@@ -84,6 +91,7 @@ const addTenant = async (req, res) => {
       email,
 
       deposit,
+      deposit_received,
       stall,
       rent,
       frequency,
@@ -93,7 +101,6 @@ const addTenant = async (req, res) => {
       water,
       internet,
       unit_status,
-      unit_id,
     } = req.body;
 
     const tenants = await Tenant.create({
@@ -107,6 +114,8 @@ const addTenant = async (req, res) => {
       image: avatar,
       contact_number: mobile,
       email: email,
+      password: "$2b$10$HxUGW1lXzB1KoqLe6onIsuIvcUtNMP4f9cKEaSkRTDisA1NkqdcHi",
+      user_role: "tenant",
     });
     const contract = await Contract.create({
       tenant_id: tenants.dataValues.id,
@@ -122,21 +131,93 @@ const addTenant = async (req, res) => {
       end_date: enddate,
       status: "Active",
     });
-    Unit.update({ status: unit_status }, { where: { id: unit_id } });
+    Unit.update({ status: unit_status }, { where: { id: stall } });
     if (deposit) {
-      Transaction.create({
+      const invoice = Invoice.create({
         tenant_id: tenants.dataValues.id,
-        status: "Paid",
         payment_for: "Deposit",
-        amount: deposit,
-        payment_method: "Cash",
-        payment_date: Date.now(),
-        received: deposit,
-        balance: 0,
+        amount_to_paid: deposit,
+        status:
+          deposit === deposit_received
+            ? "Paid"
+            : deposit > deposit_received
+            ? "Partial"
+            : "Unpaid",
+        due_date: Date.now(),
+        description: "",
+        received: deposit_received,
+        balance: deposit - deposit_received,
+      }).then((invoice) => {
+        if (deposit_received) {
+          Transaction.create({
+            tenant_id: tenants.dataValues.id,
+            invoice_id: invoice.dataValues.id,
+            received_amount: deposit_received,
+            payment_date: Date.now(),
+            description: "",
+            payment_method: "Cash",
+          });
+        }
       });
     }
 
     res.status(201).json({ success: true, msg: "Tenant Added Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const editTenant = async (req, res) => {
+  try {
+    const {
+      id,
+      firstname,
+      lastname,
+      street_address,
+      province,
+      city,
+      barangay,
+      zip,
+      avatar,
+      mobile,
+      email,
+    } = req.body;
+
+    const tenants = await Tenant.update(
+      {
+        firstname: firstname,
+        lastname: lastname,
+        street_address: street_address,
+        province: province,
+        city: city,
+        barangay: barangay,
+        zip: zip,
+        image: avatar,
+        contact_number: mobile,
+        email: email,
+        password:
+          "$2b$10$HxUGW1lXzB1KoqLe6onIsuIvcUtNMP4f9cKEaSkRTDisA1NkqdcHi",
+        user_role: "tenant",
+      },
+      { where: { id: id } }
+    );
+
+    res.status(201).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const deleteTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await Tenant.findOne({ where: { id: id } });
+    if (result) {
+      result.destroy();
+    }
+
+    res.status(201).json({ success: true, msg: "Successfully Edited" });
   } catch (error) {
     console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
@@ -208,7 +289,6 @@ const updateUnit = async (req, res) => {
 const getAllTransactions = async (req, res) => {
   try {
     const transactions = await Transaction.findAll();
-    console.log(transactions);
     res.status(200).json({
       success: true,
       transactions: transactions,
@@ -220,7 +300,6 @@ const getAllTransactions = async (req, res) => {
 const getTenantTransactions = async (req, res) => {
   try {
     const { id } = req.params;
-    const { start, end } = req.body;
     const transactions = await Transaction.findAll({
       where: {
         tenant_id: id,
@@ -236,35 +315,105 @@ const getTenantTransactions = async (req, res) => {
   }
 };
 
-const addTransaction = async (req, res) => {
+const getAllInvoice = async (req, res) => {
+  try {
+    const invoices = await Invoice.findAll();
+    res.status(200).json({
+      success: true,
+      invoices: invoices,
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const getTenantInvoices = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const invoices = await Invoice.findAll({
+      where: {
+        tenant_id: id,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      invoices: invoices,
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const addInvoice = async (req, res) => {
   console.log(req.body);
   try {
     const {
       tenant_id,
       status,
       payment_for,
-      amount,
-      method,
-      date,
+      amount_to_paid,
+      due_date,
       description,
       received,
       balance,
     } = req.body;
 
-    const transaction = await Transaction.create({
+    const invoice = await Invoice.create({
       tenant_id: tenant_id,
       status: status,
       payment_for: payment_for,
-      amount: amount,
-      payment_method: method,
-      payment_date: date,
+      amount_to_paid: amount_to_paid,
+      due_date: due_date,
       description: description,
       received: received,
       balance: balance,
     });
+    res.status(201).json({ success: true, msg: "Invoice Added Successfully" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const addTransaction = async (req, res) => {
+  try {
+    const { tenant_id, amount, description, invoice, payment_method } =
+      req.body;
+    await Transaction.create({
+      tenant_id: tenant_id,
+      invoice_id: invoice,
+      received_amount: amount,
+      payment_date: Date.now(),
+      description: description,
+      payment_method: payment_method,
+    });
+    const getInvoice = await Invoice.findOne({ where: { id: invoice } });
+
+    await Invoice.update(
+      {
+        received: getInvoice.received + amount,
+        status:
+          getInvoice.received + amount < getInvoice.amount_to_paid
+            ? "Partial"
+            : "Paid",
+      },
+      { where: { id: invoice } }
+    );
+
     res
       .status(201)
       .json({ success: true, msg: "Transaction Added Successfully" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const getAllParkingCollections = async (req, res) => {
+  try {
+    const parkingCollections = await ParkingCollection.findAll();
+
+    res.status(200).json({
+      success: true,
+      parkingCollections: parkingCollections,
+    });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
   }
@@ -275,11 +424,17 @@ module.exports = {
   getAllTenant,
   getSingleTenant,
   addTenant,
+  editTenant,
+  deleteTenant,
   getAllUnit,
   addUnit,
   updateUnit,
   upload,
   getAllTransactions,
   getTenantTransactions,
+  getAllInvoice,
+  addInvoice,
   addTransaction,
+  getTenantInvoices,
+  getAllParkingCollections,
 };
