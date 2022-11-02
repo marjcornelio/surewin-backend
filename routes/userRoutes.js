@@ -22,6 +22,8 @@ const {
   addTransaction,
   getTenantInvoices,
   getAllParkingCollections,
+  editContract,
+  addContract,
 } = require("../controllers/userController");
 
 router
@@ -30,6 +32,7 @@ router
   .get("/tenants/:id", authenticateToken, getSingleTenant)
   .patch("/tenants/edit/:id", authenticateToken, editTenant)
   .delete("/tenants/delete/:id", authenticateToken, deleteTenant);
+router.patch("/lease/edit/:id", authenticateToken, editContract);
 router.post("/upload/:type", authenticateToken, upload);
 router
   .get("/property-units", authenticateToken, getAllUnit)

@@ -53,9 +53,9 @@ const Tenant = sequelize.define("tenant", {
 });
 
 Tenant.associate = (models) => {
-  Tenant.hasMany(models.Contract, { onDelete: "Cascade" });
-  Tenant.hasMany(models.Transaction, { onDelete: "Cascade" });
-  Tenant.hasMany(models.Invoice, { onDelete: "Cascade" });
+  Tenant.hasMany(models.Contract);
+  Tenant.hasMany(models.Transaction);
+  Tenant.hasMany(models.Invoice);
 };
 sequelize
   .sync({ alter: true })

@@ -14,7 +14,6 @@ const Contract = sequelize.define("contract", {
     references: {
       model: "tenants",
       key: "id",
-      onDelete: "restrict",
     },
   },
   stall: {
@@ -42,6 +41,15 @@ const Contract = sequelize.define("contract", {
   status: {
     type: DataTypes.ENUM,
     values: ["Active", "Ended"],
+  },
+  electric: {
+    type: DataTypes.INTEGER,
+  },
+  water: {
+    type: DataTypes.INTEGER,
+  },
+  internet: {
+    type: DataTypes.INTEGER,
   },
 });
 

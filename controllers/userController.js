@@ -48,7 +48,7 @@ const getSingleTenant = async (req, res) => {
   try {
     const tenant = await Tenant.findOne({ where: { id: req.params.id } });
     const contract = await Contract.findOne({
-      where: { tenant_id: tenant.id, status: "Active" },
+      where: { tenant_id: tenant.id },
     });
     let unit = null;
     if (contract !== null) {
@@ -120,7 +120,6 @@ const addTenant = async (req, res) => {
     const contract = await Contract.create({
       tenant_id: tenants.dataValues.id,
       deposit: deposit,
-      balance: 1212,
       stall: stall,
       rental_amount: rent,
       rental_frequency: frequency,
@@ -204,20 +203,32 @@ const editTenant = async (req, res) => {
 
     res.status(201).json({ success: true, msg: "Successfully Edited" });
   } catch (error) {
-    console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
+
 const deleteTenant = async (req, res) => {
   try {
     const { id } = req.params;
+    const tenant = await Tenant.findOne({ where: { id: id } });
+    const contract = await Contract.findOne({ where: { tenant_id: id } });
 
-    const result = await Tenant.findOne({ where: { id: id } });
-    if (result) {
-      result.destroy();
+    if (tenant) {
+      Transaction.destroy({ where: { tenant_id: id } }).then(() => {
+        Invoice.destroy({ where: { tenant_id: id } }).then(() => {
+          Unit.update({ status: "vacant" }, { where: { id: contract.stall } });
+          Contract.destroy({ where: { tenant_id: id } }).then(() => {
+            Tenant.destroy({ where: { id: id } });
+          });
+        });
+      });
+
+      return res
+        .status(201)
+        .json({ success: true, msg: "Successfully Deleted" });
     }
 
-    res.status(201).json({ success: true, msg: "Successfully Edited" });
+    return res.status(404).json({ success: true, msg: "Data Not Found" });
   } catch (error) {
     console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
@@ -235,6 +246,48 @@ const upload = async (req, res) => {
     });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const editContract = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      stall,
+      rental_amount,
+      startdate,
+      enddate,
+      rental_frequency,
+      electric,
+      water,
+      internet,
+      status,
+      unit,
+    } = req.body;
+    const contract = await Contract.update(
+      {
+        stall: stall,
+        rental_amount: rental_amount,
+        start_date: startdate,
+        end_date: enddate,
+        rental_frequency: rental_frequency,
+        electric: electric,
+        water: water,
+        internet: internet,
+        status: status,
+      },
+      { where: { id: id } }
+    );
+    if (status === "Ended") {
+      await Unit.update(
+        {
+          status: "vacant",
+        },
+        { where: { id: unit.id } }
+      );
+    }
+    res.status(201).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
 
@@ -426,6 +479,7 @@ module.exports = {
   addTenant,
   editTenant,
   deleteTenant,
+  editContract,
   getAllUnit,
   addUnit,
   updateUnit,

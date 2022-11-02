@@ -14,7 +14,6 @@ const Invoice = sequelize.define("invoices", {
     references: {
       model: "tenants",
       key: "id",
-      onDelete: "restrict",
     },
   },
   amount_to_paid: {

@@ -23,7 +23,6 @@ const Transaction = sequelize.define("transaction", {
     references: {
       model: "invoices",
       key: "id",
-      onDelete: "restrict",
     },
   },
   received_amount: {
