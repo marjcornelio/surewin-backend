@@ -42,13 +42,16 @@ const Contract = sequelize.define("contract", {
     type: DataTypes.ENUM,
     values: ["Active", "Ended"],
   },
-  electric: {
+  electric_meter: {
+    type: DataTypes.STRING,
+  },
+  water_meter: {
+    type: DataTypes.STRING,
+  },
+  electric_initial_reading: {
     type: DataTypes.INTEGER,
   },
-  water: {
-    type: DataTypes.INTEGER,
-  },
-  internet: {
+  water_initial_reading: {
     type: DataTypes.INTEGER,
   },
 });

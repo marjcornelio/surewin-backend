@@ -5,11 +5,26 @@ const Unit = require("../models/PropertyUnit");
 const Transaction = require("../models/Transaction");
 const Invoice = require("../models/Invoice");
 const ParkingCollection = require("../models/ParkingCollection");
+const Utility = require("../models/Utility");
 const sequelize = require("../db/connect");
+const bcrypt = require("bcrypt");
+const nodemailer = require("nodemailer");
 
 const multer = require("multer");
 const fs = require("fs");
 const { Op } = require("sequelize");
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    type: "OAuth2",
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+    clientId: process.env.OAUTH_CLIENTID,
+    clientSecret: process.env.OAUTH_CLIENT_SECRET,
+    refreshToken: process.env.OAUTH_REFFRESH_TOKEN,
+  },
+});
 
 const uploadFnct = function (dest) {
   const storage = multer.diskStorage({
@@ -50,9 +65,18 @@ const getSingleTenant = async (req, res) => {
     const contract = await Contract.findOne({
       where: { tenant_id: tenant.id },
     });
-    let unit = null;
+    let unit = [];
     if (contract !== null) {
-      unit = await Unit.findOne({ where: { id: contract.stall } });
+      const stall = contract.stall.split(",");
+      if (stall.length > 0) {
+        stall.map(async (s) => {
+          const temp = await Unit.findOne({ where: { unit_title: s } });
+          unit.push(temp);
+        });
+      } else {
+        const temp = await Unit.findOne({ where: { unit_title: s } });
+        unit.push(temp);
+      }
     }
     const transactions = Transaction.findAll({
       where: { tenant_id: tenant.id },
@@ -101,7 +125,25 @@ const addTenant = async (req, res) => {
       water,
       internet,
       unit_status,
+      electric_meter,
+      electric_initial_reading,
+      water_meter,
+      water_initial_reading,
     } = req.body;
+    // let password = "";
+    // let hashedPassword = "";
+    // if (email) {
+    //   var chars =
+    //     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    //   var passwordLength = 10;
+    //   for (var i = 0; i <= passwordLength; i++) {
+    //     var randomNumber = Math.floor(Math.random() * chars.length);
+    //     password += chars.substring(randomNumber, randomNumber + 1);
+    //   }
+    //   const salt = await bcrypt.genSalt();
+    //   hashedPassword = await bcrypt.hash(password, salt);
+    // }
+    // console.log(password, hashedPassword);
 
     const tenants = await Tenant.create({
       firstname: firstname,
@@ -114,13 +156,13 @@ const addTenant = async (req, res) => {
       image: avatar,
       contact_number: mobile,
       email: email,
-      password: "$2b$10$HxUGW1lXzB1KoqLe6onIsuIvcUtNMP4f9cKEaSkRTDisA1NkqdcHi",
+      // password: hashedPassword,
       user_role: "tenant",
     });
     const contract = await Contract.create({
       tenant_id: tenants.dataValues.id,
       deposit: deposit,
-      stall: stall,
+      stall: stall.join(),
       rental_amount: rent,
       rental_frequency: frequency,
       electric: electric,
@@ -129,8 +171,15 @@ const addTenant = async (req, res) => {
       start_date: startdate,
       end_date: enddate,
       status: "Active",
+      electric_meter: electric_meter,
+      electric_initial_reading: electric_initial_reading,
+      water_meter: water_meter,
+      water_initial_reading: water_initial_reading,
     });
-    Unit.update({ status: unit_status }, { where: { id: stall } });
+    stall.map((s) => {
+      Unit.update({ status: unit_status }, { where: { unit_title: s } });
+    });
+
     if (deposit) {
       const invoice = Invoice.create({
         tenant_id: tenants.dataValues.id,
@@ -265,7 +314,7 @@ const editContract = async (req, res) => {
     } = req.body;
     const contract = await Contract.update(
       {
-        stall: stall,
+        stall: stall.join(),
         rental_amount: rental_amount,
         start_date: startdate,
         end_date: enddate,
@@ -287,6 +336,7 @@ const editContract = async (req, res) => {
     }
     res.status(201).json({ success: true, msg: "Successfully Edited" });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
@@ -308,21 +358,17 @@ const addUnit = async (req, res) => {
       floorArea,
       manager,
       image,
-      street_address,
-      province,
-      city,
       description,
       status,
+      rental_amount,
     } = req.body;
     const unit = await Unit.create({
       type: type,
       unit_title: unit_title,
       floorArea: floorArea,
+      rental_amount: rental_amount,
       manager: manager,
       image: image,
-      street_address: street_address,
-      province: province,
-      city: city,
       description: description,
       status: status,
     });
@@ -407,18 +453,16 @@ const addInvoice = async (req, res) => {
       due_date,
       description,
       received,
-      balance,
     } = req.body;
-
     const invoice = await Invoice.create({
+      amount_to_paid: amount_to_paid,
       tenant_id: tenant_id,
       status: status,
       payment_for: payment_for,
-      amount_to_paid: amount_to_paid,
       due_date: due_date,
       description: description,
       received: received,
-      balance: balance,
+      balance: amount_to_paid - received,
     });
     res.status(201).json({ success: true, msg: "Invoice Added Successfully" });
   } catch (error) {
@@ -430,27 +474,46 @@ const addTransaction = async (req, res) => {
   try {
     const { tenant_id, amount, description, invoice, payment_method } =
       req.body;
+
+    if (Array.isArray(invoice)) {
+      await Invoice.findAll({ where: { tenant_id: tenant_id } })
+        .then((data) => data.filter((d) => invoice.some((i) => i.id === d.id)))
+        .then((data) => {
+          data.map(async (d) => {
+            await Invoice.update(
+              {
+                received: d.amount_to_paid,
+                balance: 0,
+                status: "Paid",
+              },
+              { where: { id: d.id } }
+            );
+          });
+        });
+    } else {
+      const getInvoice = await Invoice.findOne({ where: { id: invoice } });
+      await Invoice.update(
+        {
+          received: getInvoice.received + amount,
+          balance: getInvoice.balance - amount,
+          status:
+            getInvoice.received + amount < getInvoice.amount_to_paid
+              ? "Partial"
+              : "Paid",
+        },
+        { where: { id: invoice } }
+      );
+    }
     await Transaction.create({
       tenant_id: tenant_id,
-      invoice_id: invoice,
+      invoice_id: Array.isArray(invoice)
+        ? invoice.map((i) => i.id).join()
+        : invoice,
       received_amount: amount,
       payment_date: Date.now(),
       description: description,
       payment_method: payment_method,
     });
-    const getInvoice = await Invoice.findOne({ where: { id: invoice } });
-
-    await Invoice.update(
-      {
-        received: getInvoice.received + amount,
-        status:
-          getInvoice.received + amount < getInvoice.amount_to_paid
-            ? "Partial"
-            : "Paid",
-      },
-      { where: { id: invoice } }
-    );
-
     res
       .status(201)
       .json({ success: true, msg: "Transaction Added Successfully" });
@@ -469,6 +532,34 @@ const getAllParkingCollections = async (req, res) => {
     });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const getUtility = async (req, res) => {
+  try {
+    const utility = await Utility.findAll();
+    res.status(200).json({
+      success: true,
+      utility: utility,
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const editUtility = async (req, res) => {
+  try {
+    const { electricity_rate, water_rate, id } = req.body;
+    await Utility.update(
+      {
+        electricity_rate: electricity_rate,
+        water_rate: water_rate,
+      },
+      { where: { id: id } }
+    );
+    res.status(201).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
 
@@ -491,4 +582,6 @@ module.exports = {
   addTransaction,
   getTenantInvoices,
   getAllParkingCollections,
+  getUtility,
+  editUtility,
 };

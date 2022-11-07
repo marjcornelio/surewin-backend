@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes, Model } = require("sequelize");
+const { Sequelize, DataTypes, Model, UUIDV4 } = require("sequelize");
 
 const sequelize = require("../db/connect");
 
@@ -21,20 +21,8 @@ const Unit = sequelize.define("unit", {
   floor_area: {
     type: DataTypes.INTEGER,
   },
-  street_address: {
-    type: DataTypes.STRING,
-  },
-  province: {
-    type: DataTypes.STRING,
-  },
-  city: {
-    type: DataTypes.STRING,
-  },
-  barangay: {
-    type: DataTypes.STRING,
-  },
-  zip: {
-    type: DataTypes.STRING,
+  rental_amount: {
+    type: DataTypes.INTEGER,
   },
   image: {
     type: DataTypes.STRING,

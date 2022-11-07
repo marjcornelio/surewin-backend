@@ -24,6 +24,8 @@ const {
   getAllParkingCollections,
   editContract,
   addContract,
+  getUtility,
+  editUtility,
 } = require("../controllers/userController");
 
 router
@@ -47,6 +49,9 @@ router
   .post("/invoices/add", authenticateToken, addInvoice)
   .get("/invoices/:id", authenticateToken, getTenantInvoices);
 router.get("/parking_collections", authenticateToken, getAllParkingCollections);
+router
+  .get("/utility", authenticateToken, getUtility)
+  .patch("/utility", authenticateToken, editUtility);
 
 router.get("/users", authenticateToken, getAllUser);
 

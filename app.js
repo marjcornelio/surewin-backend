@@ -29,14 +29,15 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api/", userRouter);
 
+//Recurring Payment for Rental and Monthly Billings
 cron.schedule("0 0 0 * * *", async () => {
   const response = await reccur.fetchData();
   const tenant = await response.tenant;
   let contract = await response.contract;
   const Invoice = await response.Invoice;
 
-  contract = contract.filter((c) => c.rental_frequency === "Daily");
-  contract.forEach((c) => {
+  let tempcontract = contract.filter((c) => c.rental_frequency === "Daily");
+  tempcontract.forEach((c) => {
     Invoice.create({
       tenant_id: c.tenant_id,
       status: "Unpaid",
@@ -48,6 +49,31 @@ cron.schedule("0 0 0 * * *", async () => {
       balance: c.rental_amount,
     });
   });
+
+  if (
+    new Date() ===
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+  ) {
+    tempcontract = contract.filter((c) => c.rental_frequency === "Monthly");
+    tempcontract.forEach((c) => {
+      Invoice.create({
+        tenant_id: c.tenant_id,
+        status: "Unpaid",
+        payment_for: "Rent",
+        amount_to_paid:
+          c.rental_amount *
+          new Date(
+            new Date().getFullYear(),
+            new Date().getMonth() + 1,
+            0
+          ).getDate(),
+        due_date: new Date(),
+        description: "Rental Collection",
+        received: 0,
+        balance: c.rental_amount,
+      });
+    });
+  }
 });
 
 const port = process.env.PORT || 5000;
