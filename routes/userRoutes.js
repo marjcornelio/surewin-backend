@@ -6,6 +6,7 @@ const authenticateToken = require("../middleware/authenticateToken");
 //controllers
 const {
   getAllUser,
+  addUser,
   getAllTenant,
   getSingleTenant,
   addTenant,
@@ -23,9 +24,13 @@ const {
   getTenantInvoices,
   getAllParkingCollections,
   editContract,
-  addContract,
   getUtility,
   editUtility,
+  addParkingCollection,
+  getSingleUser,
+  editUser,
+  setElectricBill,
+  setWaterBill,
 } = require("../controllers/userController");
 
 router
@@ -35,6 +40,9 @@ router
   .patch("/tenants/edit/:id", authenticateToken, editTenant)
   .delete("/tenants/delete/:id", authenticateToken, deleteTenant);
 router.patch("/lease/edit/:id", authenticateToken, editContract);
+router
+  .patch("/bill/electricity", authenticateToken, setElectricBill)
+  .patch("/bill/water", authenticateToken, setWaterBill);
 router.post("/upload/:type", authenticateToken, upload);
 router
   .get("/property-units", authenticateToken, getAllUnit)
@@ -48,11 +56,17 @@ router
   .get("/invoices", authenticateToken, getAllInvoice)
   .post("/invoices/add", authenticateToken, addInvoice)
   .get("/invoices/:id", authenticateToken, getTenantInvoices);
-router.get("/parking_collections", authenticateToken, getAllParkingCollections);
+router
+  .get("/parking_collections", authenticateToken, getAllParkingCollections)
+  .post("/parking_collections/add", authenticateToken, addParkingCollection);
 router
   .get("/utility", authenticateToken, getUtility)
   .patch("/utility", authenticateToken, editUtility);
 
-router.get("/users", authenticateToken, getAllUser);
+router
+  .get("/users", authenticateToken, getAllUser)
+  .post("/users/add", authenticateToken, addUser)
+  .get("/users/:id", authenticateToken, getSingleUser)
+  .patch("/users/edit/:id", authenticateToken, editUser);
 
 module.exports = router;

@@ -51,8 +51,20 @@ const Contract = sequelize.define("contract", {
   electric_initial_reading: {
     type: DataTypes.INTEGER,
   },
+  electric_current_reading: {
+    type: DataTypes.INTEGER,
+  },
+  electric_last_reading: {
+    type: DataTypes.DATE,
+  },
   water_initial_reading: {
     type: DataTypes.INTEGER,
+  },
+  water_current_reading: {
+    type: DataTypes.INTEGER,
+  },
+  water_last_reading: {
+    type: DataTypes.DATE,
   },
 });
 

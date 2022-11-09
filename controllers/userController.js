@@ -47,12 +47,94 @@ const getAllUser = async (req, res) => {
     res.json({ success: false, msg: "Something Went Wrong" });
   }
 };
+const getSingleUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ where: { id: id } });
+    res.status(200).json({ success: true, user: user });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const editUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      firstname,
+      lastname,
+      street_address,
+      province,
+      city,
+      barangay,
+      zip,
+      email,
+      avatar,
+      contact_number,
+      user_role,
+    } = req.body;
+    await User.update(
+      {
+        firstname: firstname,
+        lastname: lastname,
+        street_address: street_address,
+        province: province,
+        city: city,
+        barangay: barangay,
+        zip: zip,
+        email: email,
+        image: avatar,
+        contact_number: contact_number,
+        user_role: user_role,
+      },
+      { where: { id: id } }
+    );
+    res.status(200).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const addUser = async (req, res) => {
+  try {
+    const {
+      firstname,
+      lastname,
+      street_address,
+      province,
+      city,
+      barangay,
+      zip,
+      email,
+      avatar,
+      contact_number,
+      user_role,
+    } = req.body;
+    await User.create({
+      firstname: firstname,
+      lastname: lastname,
+      street_address: street_address,
+      province: province,
+      city: city,
+      barangay: barangay,
+      zip: zip,
+      email: email,
+      image: avatar,
+      contact_number: contact_number,
+      user_role: user_role,
+    });
+    res.status(201).json({ success: true, msg: "Successfully Created" });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+    console.log(error);
+  }
+};
 const getAllTenant = async (req, res) => {
   try {
     const [results, metadata] = await sequelize.query(
       "SELECT * FROM contracts LEFT OUTER JOIN tenants ON contracts.tenant_id = tenants.id"
     );
     const tenants = results;
+    tenants.map((i) => delete i.password && delete i.username);
+
     res.status(200).json({ success: true, tenants: tenants });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
@@ -111,6 +193,7 @@ const addTenant = async (req, res) => {
       barangay,
       zip,
       avatar,
+      validId,
       mobile,
       email,
 
@@ -130,20 +213,20 @@ const addTenant = async (req, res) => {
       water_meter,
       water_initial_reading,
     } = req.body;
-    // let password = "";
-    // let hashedPassword = "";
-    // if (email) {
-    //   var chars =
-    //     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    //   var passwordLength = 10;
-    //   for (var i = 0; i <= passwordLength; i++) {
-    //     var randomNumber = Math.floor(Math.random() * chars.length);
-    //     password += chars.substring(randomNumber, randomNumber + 1);
-    //   }
-    //   const salt = await bcrypt.genSalt();
-    //   hashedPassword = await bcrypt.hash(password, salt);
-    // }
-    // console.log(password, hashedPassword);
+    let password = "";
+    let hashedPassword = "";
+    if (email) {
+      var chars =
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      var passwordLength = 10;
+      for (var i = 0; i <= passwordLength; i++) {
+        var randomNumber = Math.floor(Math.random() * chars.length);
+        password += chars.substring(randomNumber, randomNumber + 1);
+      }
+      const salt = await bcrypt.genSalt();
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+    console.log(password, hashedPassword);
 
     const tenants = await Tenant.create({
       firstname: firstname,
@@ -154,9 +237,10 @@ const addTenant = async (req, res) => {
       barangay: barangay,
       zip: zip,
       image: avatar,
+      valid_id: validId,
       contact_number: mobile,
       email: email,
-      // password: hashedPassword,
+      password: hashedPassword,
       user_role: "tenant",
     });
     const contract = await Contract.create({
@@ -173,8 +257,10 @@ const addTenant = async (req, res) => {
       status: "Active",
       electric_meter: electric_meter,
       electric_initial_reading: electric_initial_reading,
+      electric_last_reading: new Date(),
       water_meter: water_meter,
       water_initial_reading: water_initial_reading,
+      electric_last_reading: new Date(),
     });
     stall.map((s) => {
       Unit.update({ status: unit_status }, { where: { unit_title: s } });
@@ -208,6 +294,13 @@ const addTenant = async (req, res) => {
         }
       });
     }
+    // let info = await transporter.sendMail({
+    //   from: '"Fred Foo 👻" <foo@example.com>', // sender address
+    //   to: `${email}`, // list of receivers
+    //   subject: "Hello ✔", // Subject line
+    //   text: "Hello world?", // plain text body
+    //   html: "<b>Hello world?</b>", // html body
+    // });
 
     res.status(201).json({ success: true, msg: "Tenant Added Successfully" });
   } catch (error) {
@@ -243,9 +336,6 @@ const editTenant = async (req, res) => {
         image: avatar,
         contact_number: mobile,
         email: email,
-        password:
-          "$2b$10$HxUGW1lXzB1KoqLe6onIsuIvcUtNMP4f9cKEaSkRTDisA1NkqdcHi",
-        user_role: "tenant",
       },
       { where: { id: id } }
     );
@@ -285,7 +375,6 @@ const deleteTenant = async (req, res) => {
 };
 const upload = async (req, res) => {
   try {
-    console.log(req.params.type);
     const currUpload = uploadFnct(req.params.type);
     currUpload(req, res, (err) => {
       if (err) {
@@ -311,6 +400,10 @@ const editContract = async (req, res) => {
       internet,
       status,
       unit,
+      electric_meter,
+      water_meter,
+      electric_initial_reading,
+      water_initial_reading,
     } = req.body;
     const contract = await Contract.update(
       {
@@ -323,6 +416,10 @@ const editContract = async (req, res) => {
         water: water,
         internet: internet,
         status: status,
+        electric_meter: electric_meter,
+        water_meter: water_meter,
+        electric_initial_reading: electric_initial_reading,
+        water_initial_reading: water_initial_reading,
       },
       { where: { id: id } }
     );
@@ -335,6 +432,65 @@ const editContract = async (req, res) => {
       );
     }
     res.status(201).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+
+const setElectricBill = async (req, res) => {
+  try {
+    const { tenant_id, electric_initial_reading, electric_last_reading, cost } =
+      req.body;
+    await Contract.update(
+      {
+        electric_initial_reading: electric_initial_reading,
+        electric_last_reading: electric_last_reading,
+      },
+      { where: { tenant_id: tenant_id } }
+    );
+    const invoice = await Invoice.create({
+      amount_to_paid: cost,
+      tenant_id: tenant_id,
+      status: "Unpaid",
+      payment_for: "Electricity Bill",
+      due_date: new Date(),
+      description: "",
+      received: 0,
+      balance: cost,
+    });
+    res
+      .status(201)
+      .json({ success: true, msg: "Successfully Place Electricity Bill" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const setWaterBill = async (req, res) => {
+  try {
+    const { tenant_id, water_initial_reading, water_last_reading, cost } =
+      req.body;
+    await Contract.update(
+      {
+        water_initial_reading: water_initial_reading,
+        water_last_reading: water_last_reading,
+      },
+      { where: { tenant_id: tenant_id } }
+    );
+    const invoice = await Invoice.create({
+      amount_to_paid: cost,
+      tenant_id: tenant_id,
+      status: "Unpaid",
+      payment_for: "Water Bill",
+      due_date: new Date(),
+      description: "",
+      received: 0,
+      balance: cost,
+    });
+    res
+      .status(201)
+      .json({ success: true, msg: "Successfully Place Water Bill" });
   } catch (error) {
     console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
@@ -525,13 +681,36 @@ const addTransaction = async (req, res) => {
 const getAllParkingCollections = async (req, res) => {
   try {
     const parkingCollections = await ParkingCollection.findAll();
+    const users = await User.findAll({
+      attributes: { exclude: ["password", "username"] },
+    });
 
     res.status(200).json({
       success: true,
       parkingCollections: parkingCollections,
+      users: users,
     });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const addParkingCollection = async (req, res) => {
+  try {
+    const { received_from, received_amount, date, description } = req.body;
+
+    await ParkingCollection.create({
+      received_from: received_from,
+      received_amount: received_amount,
+      payment_date: date,
+      description: description,
+    });
+
+    res.status(201).json({
+      success: true,
+      msg: "Successfully Added Parkign Collection",
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
 
@@ -565,10 +744,15 @@ const editUtility = async (req, res) => {
 
 module.exports = {
   getAllUser,
+  getSingleUser,
+  addUser,
+  editUser,
   getAllTenant,
   getSingleTenant,
   addTenant,
   editTenant,
+  setElectricBill,
+  setWaterBill,
   deleteTenant,
   editContract,
   getAllUnit,
@@ -582,6 +766,7 @@ module.exports = {
   addTransaction,
   getTenantInvoices,
   getAllParkingCollections,
+  addParkingCollection,
   getUtility,
   editUtility,
 };

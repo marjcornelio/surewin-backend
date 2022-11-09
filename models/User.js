@@ -11,44 +11,46 @@ const User = sequelize.define(
     },
     firstname: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     middlename: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     lastname: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
-    address: {
+    street_address: {
       type: DataTypes.STRING,
-      allowNull: false,
+    },
+    province: {
+      type: DataTypes.STRING,
+    },
+    city: {
+      type: DataTypes.STRING,
+    },
+    barangay: {
+      type: DataTypes.STRING,
+    },
+    zip: {
+      type: DataTypes.STRING,
     },
     user_role: {
       type: DataTypes.ENUM,
-      values: ["admin", "manager", "tenant"],
-      allowNull: false,
+      values: ["admin", "manager", "staff"],
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     image: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     contact_number: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     username: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
   },
   { timestamps: false }

@@ -36,6 +36,9 @@ const Tenant = sequelize.define("tenant", {
   image: {
     type: DataTypes.STRING,
   },
+  valid_id: {
+    type: DataTypes.STRING,
+  },
   contact_number: {
     type: DataTypes.STRING,
   },

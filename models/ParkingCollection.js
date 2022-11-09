@@ -8,7 +8,7 @@ const ParkingCollection = sequelize.define("parking_collection", {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  received_by: {
+  received_from: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -21,6 +21,9 @@ const ParkingCollection = sequelize.define("parking_collection", {
   },
   payment_date: {
     type: DataTypes.DATE,
+  },
+  description: {
+    type: DataTypes.STRING,
   },
 });
 
