@@ -14,18 +14,6 @@ const multer = require("multer");
 const fs = require("fs");
 const { Op } = require("sequelize");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    type: "OAuth2",
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
-    clientId: process.env.OAUTH_CLIENTID,
-    clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    refreshToken: process.env.OAUTH_REFFRESH_TOKEN,
-  },
-});
-
 const uploadFnct = function (dest) {
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -108,6 +96,32 @@ const addUser = async (req, res) => {
       contact_number,
       user_role,
     } = req.body;
+    let password = "";
+    let hashedPassword = "";
+    if (email) {
+      var chars =
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      var passwordLength = 10;
+      for (var i = 0; i <= passwordLength; i++) {
+        var randomNumber = Math.floor(Math.random() * chars.length);
+        password += chars.substring(randomNumber, randomNumber + 1);
+      }
+      const salt = await bcrypt.genSalt();
+      hashedPassword = await bcrypt.hash(password, salt);
+    }
+    // const transporter = nodemailer.createTransport({
+    //   service: "gmail",
+    //   auth: {
+    //     type: "OAuth2",
+    //     user: process.env.EMAIL_USERNAME,
+    //     pass: process.env.EMAIL_PASSWORD,
+    //     clientId: process.env.OAUTH_CLIENTID,
+    //     clientSecret: process.env.OAUTH_CLIENT_SECRET,
+    //     refreshToken: process.env.OAUTH_REFFRESH_TOKEN,
+    //   },
+    // });
+
+    console.log(password, hashedPassword);
     await User.create({
       firstname: firstname,
       lastname: lastname,
@@ -120,6 +134,7 @@ const addUser = async (req, res) => {
       image: avatar,
       contact_number: contact_number,
       user_role: user_role,
+      password: hashedPassword,
     });
     res.status(201).json({ success: true, msg: "Successfully Created" });
   } catch (error) {

@@ -18,7 +18,7 @@ const login = async (req, res) => {
     if (user == null) {
       return res.status(400).json({
         success: false,
-        msg: "Incorrent email or password",
+        msg: "Incorrent email",
       });
     }
   }
@@ -26,11 +26,12 @@ const login = async (req, res) => {
     if (await bcrypt.compare(req.body.password, user.password)) {
       const email = user.email;
       const accessToken = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET);
-      const { firstname, lastname, middlename, user_role, id } = user;
+      const { firstname, lastname, middlename, user_role, id, image } = user;
       return res.status(200).json({
         success: true,
         accessToken: accessToken,
         user: {
+          image: image,
           firstname: firstname,
           lastname: lastname,
           middlename: middlename,
@@ -41,7 +42,7 @@ const login = async (req, res) => {
     } else {
       return res
         .status(400)
-        .json({ success: false, msg: "Incorrent email or password" });
+        .json({ success: false, msg: "Incorrent password" });
     }
   } catch (error) {
     console.log(error);
