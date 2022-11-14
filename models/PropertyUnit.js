@@ -4,15 +4,15 @@ const sequelize = require("../db/connect");
 
 const Unit = sequelize.define("unit", {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
     primaryKey: true,
   },
 
   unit_title: {
     type: DataTypes.STRING,
   },
-  property_type: {
+  type: {
     type: DataTypes.STRING,
   },
   description: {

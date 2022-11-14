@@ -219,9 +219,6 @@ const addTenant = async (req, res) => {
       frequency,
       startdate,
       enddate,
-      electric,
-      water,
-      internet,
       unit_status,
       electric_meter,
       electric_initial_reading,
@@ -264,18 +261,15 @@ const addTenant = async (req, res) => {
       stall: stall.join(),
       rental_amount: rent,
       rental_frequency: frequency,
-      electric: electric,
-      water: water,
-      internet: internet,
       start_date: startdate,
       end_date: enddate,
       status: "Active",
       electric_meter: electric_meter,
       electric_initial_reading: electric_initial_reading,
-      electric_last_reading: new Date(),
+      electric_last_reading: new Date(Date.now()),
       water_meter: water_meter,
       water_initial_reading: water_initial_reading,
-      electric_last_reading: new Date(),
+      water_last_reading: new Date(Date.now()),
     });
     stall.map((s) => {
       Unit.update({ status: unit_status }, { where: { unit_title: s } });
@@ -333,10 +327,10 @@ const editTenant = async (req, res) => {
       province,
       city,
       barangay,
-      zip,
       avatar,
       mobile,
       email,
+      valid_id,
     } = req.body;
 
     const tenants = await Tenant.update(
@@ -347,10 +341,10 @@ const editTenant = async (req, res) => {
         province: province,
         city: city,
         barangay: barangay,
-        zip: zip,
         image: avatar,
         contact_number: mobile,
         email: email,
+        valid_id: valid_id,
       },
       { where: { id: id } }
     );
@@ -370,7 +364,10 @@ const deleteTenant = async (req, res) => {
     if (tenant) {
       Transaction.destroy({ where: { tenant_id: id } }).then(() => {
         Invoice.destroy({ where: { tenant_id: id } }).then(() => {
-          Unit.update({ status: "vacant" }, { where: { id: contract.stall } });
+          Unit.update(
+            { status: "vacant" },
+            { where: { unit_title: contract.stall } }
+          );
           Contract.destroy({ where: { tenant_id: id } }).then(() => {
             Tenant.destroy({ where: { id: id } });
           });
@@ -452,11 +449,35 @@ const editContract = async (req, res) => {
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
-
+const endContract = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, unit } = req.body;
+    await Contract.findOne({ where: { id: id } }).then(async (res) => {
+      const stalls = res.stall.split(",");
+      stalls.map(async (stall) => {
+        await Unit.update(
+          { status: "vacant" },
+          { where: { unit_title: stall } }
+        );
+      });
+      await Contract.update({ status: status }, { where: { id: id } });
+    });
+    res.status(201).json({ success: true, msg: "Successfully Edited" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
 const setElectricBill = async (req, res) => {
   try {
-    const { tenant_id, electric_initial_reading, electric_last_reading, cost } =
-      req.body;
+    const {
+      tenant_id,
+      electric_initial_reading,
+      electric_last_reading,
+      cost,
+      monthOf,
+    } = req.body;
     await Contract.update(
       {
         electric_initial_reading: electric_initial_reading,
@@ -469,7 +490,7 @@ const setElectricBill = async (req, res) => {
       tenant_id: tenant_id,
       status: "Unpaid",
       payment_for: "Electricity Bill",
-      due_date: new Date(),
+      due_date: monthOf,
       description: "",
       received: 0,
       balance: cost,
@@ -523,31 +544,26 @@ const getAllUnit = async (req, res) => {
 
 const addUnit = async (req, res) => {
   try {
-    const {
-      type,
-      unit_title,
-      floorArea,
-      manager,
-      image,
-      description,
-      status,
-      rental_amount,
-    } = req.body;
+    const { type, image, description, status, rental_amount } = req.body;
     const unit = await Unit.create({
       type: type,
-      unit_title: unit_title,
-      floorArea: floorArea,
+      unit_title: type + " " + this.id,
       rental_amount: rental_amount,
-      manager: manager,
       image: image,
       description: description,
       status: status,
+    }).then((res) => {
+      Unit.update(
+        { unit_title: type + " " + res.id },
+        { where: { id: res.id } }
+      );
     });
 
     res
       .status(201)
       .json({ success: true, msg: "Property Unit Added Successfully" });
   } catch (error) {
+    console.log(error);
     res.json({ success: false, msg: "Something Went Wrong" });
   }
 };
@@ -558,7 +574,11 @@ const updateUnit = async (req, res) => {
 
 const getAllTransactions = async (req, res) => {
   try {
-    const transactions = await Transaction.findAll();
+    const [results, metadata] = await sequelize.query(
+      "SELECT * FROM transactions LEFT OUTER JOIN invoices ON transactions.invoice_id = invoices.id"
+    );
+    const transactions = results;
+
     res.status(200).json({
       success: true,
       transactions: transactions,
@@ -770,6 +790,7 @@ module.exports = {
   setWaterBill,
   deleteTenant,
   editContract,
+  endContract,
   getAllUnit,
   addUnit,
   updateUnit,

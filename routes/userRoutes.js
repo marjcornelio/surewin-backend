@@ -31,6 +31,8 @@ const {
   editUser,
   setElectricBill,
   setWaterBill,
+  endContract,
+  getCollections,
 } = require("../controllers/userController");
 
 router
@@ -39,7 +41,9 @@ router
   .get("/tenants/:id", authenticateToken, getSingleTenant)
   .patch("/tenants/edit/:id", authenticateToken, editTenant)
   .delete("/tenants/delete/:id", authenticateToken, deleteTenant);
-router.patch("/lease/edit/:id", authenticateToken, editContract);
+router
+  .patch("/lease/edit/:id", authenticateToken, editContract)
+  .patch("/lease/end/:id", authenticateToken, endContract);
 router
   .patch("/bill/electricity", authenticateToken, setElectricBill)
   .patch("/bill/water", authenticateToken, setWaterBill);
