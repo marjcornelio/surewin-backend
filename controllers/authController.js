@@ -2,6 +2,15 @@ const User = require("../models/User");
 const Tenant = require("../models/Tenant");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const mailgun = require("mailgun-js");
+const Hogan = require("hogan.js");
+const fs = require("fs");
+
+const resetpasswordTemplate = fs.readFileSync(
+  "./views/resetpassword.hjs",
+  "utf-8"
+);
+const compileResetPassword = Hogan.compile(resetpasswordTemplate);
 
 const login = async (req, res) => {
   let user = await User.findOne({
@@ -45,7 +54,6 @@ const login = async (req, res) => {
         .json({ success: false, msg: "Incorrent password" });
     }
   } catch (error) {
-    console.log(error);
     return res.status(400).json({
       success: false,
       msg: "Something went wrong, Please Try again Later",
@@ -53,6 +61,77 @@ const login = async (req, res) => {
   }
 };
 
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { email: email } });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        msg: "User email is not exist",
+      });
+    }
+
+    const DOMAIN = "surewinmarketplace.tech";
+    const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET);
+    const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
+    const data = {
+      from: "noreply@surewinmarketplace.tech",
+      to: email,
+      subject: "Password Reset",
+      html: compileResetPassword.render({
+        firstname: user.firstname,
+        lastname: user.lastname,
+        link: `http://localhost:3000/resetpassword/${user.id}/${token}`,
+      }),
+    };
+    mg.messages().send(data, function (error, body) {
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          msg: "Something went wrong, Please Try again Later",
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          msg: "Reset Password Link Successfully Sent",
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      success: false,
+      msg: "Something went wrong, Please Try again Later",
+    });
+  }
+};
+const resetPassword = async (req, res) => {
+  try {
+    const { id, password, token } = req.body;
+    const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    const user = await User.findOne({ where: { id: id } });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        msg: "User does not exist",
+      });
+    }
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await User.update({ password: hashedPassword }, { where: { id: id } });
+    return res.status(200).json({
+      success: true,
+      msg: "Reset Password Link Successfully Sent",
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      msg: "Something went wrong, Please Try again Later",
+    });
+  }
+};
 const register = async (req, res) => {
   try {
     const {
@@ -87,4 +166,4 @@ const register = async (req, res) => {
   }
 };
 
-module.exports = { login, register };
+module.exports = { login, register, forgotPassword, resetPassword };

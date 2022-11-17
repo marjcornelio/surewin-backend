@@ -8,11 +8,18 @@ const ParkingCollection = require("../models/ParkingCollection");
 const Utility = require("../models/Utility");
 const sequelize = require("../db/connect");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken");
 
 const multer = require("multer");
 const fs = require("fs");
 const { Op } = require("sequelize");
+const mailgun = require("mailgun-js");
+const Hogan = require("hogan.js");
+const sendpasswordTemplate = fs.readFileSync(
+  "./views/sendPassword.hjs",
+  "utf-8"
+);
+const compileResetPassword = Hogan.compile(sendpasswordTemplate);
 
 const uploadFnct = function (dest) {
   const storage = multer.diskStorage({
@@ -109,32 +116,43 @@ const addUser = async (req, res) => {
       const salt = await bcrypt.genSalt();
       hashedPassword = await bcrypt.hash(password, salt);
     }
-    // const transporter = nodemailer.createTransport({
-    //   service: "gmail",
-    //   auth: {
-    //     type: "OAuth2",
-    //     user: process.env.EMAIL_USERNAME,
-    //     pass: process.env.EMAIL_PASSWORD,
-    //     clientId: process.env.OAUTH_CLIENTID,
-    //     clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    //     refreshToken: process.env.OAUTH_REFFRESH_TOKEN,
-    //   },
-    // });
 
-    console.log(password, hashedPassword);
-    await User.create({
-      firstname: firstname,
-      lastname: lastname,
-      street_address: street_address,
-      province: province,
-      city: city,
-      barangay: barangay,
-      zip: zip,
-      email: email,
-      image: avatar,
-      contact_number: contact_number,
-      user_role: user_role,
-      password: hashedPassword,
+    const DOMAIN = "surewinmarketplace.tech";
+    const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
+    const data = {
+      from: "noreply@surewinmarketplace.tech",
+      to: email,
+      subject: "Login Credentials",
+      html: compileResetPassword.render({
+        firstname: firstname,
+        lastname: lastname,
+        password: password,
+        email: email,
+        link: `http://localhost:3000/`,
+      }),
+    };
+    mg.messages().send(data, async function (error, body) {
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          msg: "Something went wrong, Please Try again Later",
+        });
+      } else {
+        await User.create({
+          firstname: firstname,
+          lastname: lastname,
+          street_address: street_address,
+          province: province,
+          city: city,
+          barangay: barangay,
+          zip: zip,
+          email: email,
+          image: avatar,
+          contact_number: contact_number,
+          user_role: user_role,
+          password: hashedPassword,
+        });
+      }
     });
     res.status(201).json({ success: true, msg: "Successfully Created" });
   } catch (error) {
