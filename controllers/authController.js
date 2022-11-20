@@ -123,7 +123,7 @@ const resetPassword = async (req, res) => {
     await User.update({ password: hashedPassword }, { where: { id: id } });
     return res.status(200).json({
       success: true,
-      msg: "Reset Password Link Successfully Sent",
+      msg: "Reset Password Successfully ",
     });
   } catch (error) {
     return res.status(400).json({

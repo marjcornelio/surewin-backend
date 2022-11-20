@@ -7,6 +7,7 @@ const authenticateToken = require("../middleware/authenticateToken");
 const {
   getAllUser,
   addUser,
+  deleteUser,
   getAllTenant,
   getSingleTenant,
   addTenant,
@@ -32,7 +33,9 @@ const {
   setElectricBill,
   setWaterBill,
   endContract,
-  getCollections,
+  changePassword,
+  getSingleUnit,
+  deleteUnit,
 } = require("../controllers/userController");
 
 router
@@ -51,7 +54,9 @@ router.post("/upload/:type", authenticateToken, upload);
 router
   .get("/property-units", authenticateToken, getAllUnit)
   .post("/property-units/add", authenticateToken, addUnit)
-  .patch("/property-units/update", authenticateToken, updateUnit);
+  .patch("/property-units/update/:id", authenticateToken, updateUnit)
+  .get("/property-units/:id", authenticateToken, getSingleUnit)
+  .delete("/property-units/delete/:id", authenticateToken, deleteUnit);
 router
   .get("/transactions", authenticateToken, getAllTransactions)
   .post("/transactions/add", authenticateToken, addTransaction)
@@ -71,6 +76,8 @@ router
   .get("/users", authenticateToken, getAllUser)
   .post("/users/add", authenticateToken, addUser)
   .get("/users/:id", authenticateToken, getSingleUser)
-  .patch("/users/edit/:id", authenticateToken, editUser);
+  .patch("/users/edit/:id", authenticateToken, editUser)
+  .delete("/users/delete/:id", authenticateToken, deleteUser);
+router.patch("/change-password/:id", authenticateToken, changePassword);
 
 module.exports = router;

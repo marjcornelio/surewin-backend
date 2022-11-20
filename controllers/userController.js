@@ -64,7 +64,7 @@ const editUser = async (req, res) => {
       zip,
       email,
       avatar,
-      contact_number,
+      mobile,
       user_role,
     } = req.body;
     await User.update(
@@ -78,7 +78,7 @@ const editUser = async (req, res) => {
         zip: zip,
         email: email,
         image: avatar,
-        contact_number: contact_number,
+        contact_number: mobile,
         user_role: user_role,
       },
       { where: { id: id } }
@@ -103,61 +103,134 @@ const addUser = async (req, res) => {
       contact_number,
       user_role,
     } = req.body;
-    let password = "";
-    let hashedPassword = "";
-    if (email) {
-      var chars =
-        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      var passwordLength = 10;
-      for (var i = 0; i <= passwordLength; i++) {
-        var randomNumber = Math.floor(Math.random() * chars.length);
-        password += chars.substring(randomNumber, randomNumber + 1);
+    if (user_role.toLowerCase() !== "staff") {
+      let password = "";
+      let hashedPassword = "";
+      if (email) {
+        var chars =
+          "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var passwordLength = 10;
+        for (var i = 0; i <= passwordLength; i++) {
+          var randomNumber = Math.floor(Math.random() * chars.length);
+          password += chars.substring(randomNumber, randomNumber + 1);
+        }
+        const salt = await bcrypt.genSalt();
+        hashedPassword = await bcrypt.hash(password, salt);
       }
-      const salt = await bcrypt.genSalt();
-      hashedPassword = await bcrypt.hash(password, salt);
-    }
 
-    const DOMAIN = "surewinmarketplace.tech";
-    const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
-    const data = {
-      from: "noreply@surewinmarketplace.tech",
-      to: email,
-      subject: "Login Credentials",
-      html: compileResetPassword.render({
-        firstname: firstname,
-        lastname: lastname,
-        password: password,
-        email: email,
-        link: `http://localhost:3000/`,
-      }),
-    };
-    mg.messages().send(data, async function (error, body) {
-      if (error) {
-        return res.status(400).json({
-          success: false,
-          msg: "Something went wrong, Please Try again Later",
-        });
-      } else {
-        await User.create({
+      const DOMAIN = "surewinmarketplace.tech";
+      const mg = mailgun({
+        apiKey: process.env.MAILGUN_API_KEY,
+        domain: DOMAIN,
+      });
+      const data = {
+        from: "noreply@surewinmarketplace.tech",
+        to: email,
+        subject: "Login Credentials",
+        html: compileResetPassword.render({
           firstname: firstname,
           lastname: lastname,
-          street_address: street_address,
-          province: province,
-          city: city,
-          barangay: barangay,
-          zip: zip,
+          password: password,
           email: email,
-          image: avatar,
-          contact_number: contact_number,
-          user_role: user_role,
-          password: hashedPassword,
-        });
-      }
-    });
-    res.status(201).json({ success: true, msg: "Successfully Created" });
+          link: `http://localhost:3000/`,
+        }),
+      };
+      mg.messages().send(data, async function (error, body) {
+        if (error) {
+          return res.status(400).json({
+            success: false,
+            msg: "Something went wrong, Please Try again Later",
+          });
+        } else {
+          await User.create({
+            firstname: firstname,
+            lastname: lastname,
+            street_address: street_address,
+            province: province,
+            city: city,
+            barangay: barangay,
+            zip: zip,
+            email: email,
+            image: avatar,
+            contact_number: contact_number,
+            user_role: user_role,
+            password: hashedPassword,
+          });
+          return res
+            .status(201)
+            .json({ success: true, msg: "Successfully Created" });
+        }
+      });
+    } else {
+      await User.create({
+        firstname: firstname,
+        lastname: lastname,
+        street_address: street_address,
+        province: province,
+        city: city,
+        barangay: barangay,
+        zip: zip,
+        email: email,
+        image: avatar,
+        contact_number: contact_number,
+        user_role: user_role,
+        password: "",
+      });
+      return res
+        .status(201)
+        .json({ success: true, msg: "Successfully Created" });
+    }
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const changePassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findOne({ where: { id: id } });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        msg: "User does not exist",
+      });
+    }
+    console.log(currentPassword);
+    if (await bcrypt.compare(currentPassword, user.password)) {
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+      await User.update({ password: hashedPassword }, { where: { id: id } });
+      return res.status(200).json({
+        success: true,
+        msg: "Change Password Successfully ",
+      });
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Incorrent password" });
+    }
+  } catch (error) {
     console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findOne({ where: { id: id } });
+
+    if (user) {
+      User.destroy({ where: { id: id } });
+
+      return res
+        .status(201)
+        .json({ success: true, msg: "Successfully Deleted" });
+    }
+
+    return res.status(404).json({ success: true, msg: "Data Not Found" });
+  } catch (error) {
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
 const getAllTenant = async (req, res) => {
@@ -559,6 +632,15 @@ const getAllUnit = async (req, res) => {
     res.json({ success: false, msg: "Something Went Wrong" });
   }
 };
+const getSingleUnit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const units = await Unit.findOne({ where: { id: id } });
+    res.status(200).json({ success: true, units: units });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
 
 const addUnit = async (req, res) => {
   try {
@@ -587,7 +669,40 @@ const addUnit = async (req, res) => {
 };
 
 const updateUnit = async (req, res) => {
-  Unit.update({ status });
+  try {
+    const { id } = req.params;
+    const { type, image, description, status, rental_amount } = req.body;
+    const unit = await Unit.update(
+      {
+        type: type,
+        rental_amount: rental_amount,
+        image: image,
+        description: description,
+        status: status,
+      },
+      { where: { id: id } }
+    );
+
+    res
+      .status(201)
+      .json({ success: true, msg: "Property Unit Updated Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const deleteUnit = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Unit.destroy({ where: { id: id } });
+
+    res
+      .status(200)
+      .json({ success: true, msg: "Property Unit Deleted Successfully" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
 };
 
 const getAllTransactions = async (req, res) => {
@@ -608,11 +723,10 @@ const getAllTransactions = async (req, res) => {
 const getTenantTransactions = async (req, res) => {
   try {
     const { id } = req.params;
-    const transactions = await Transaction.findAll({
-      where: {
-        tenant_id: id,
-      },
-    });
+    const [results, metadata] = await sequelize.query(
+      `SELECT * FROM transactions LEFT OUTER JOIN invoices ON transactions.invoice_id = invoices.id WHERE transactions.tenant_id = "${id}" `
+    );
+    const transactions = results;
 
     res.status(200).json({
       success: true,
@@ -800,6 +914,7 @@ module.exports = {
   getSingleUser,
   addUser,
   editUser,
+  deleteUser,
   getAllTenant,
   getSingleTenant,
   addTenant,
@@ -823,4 +938,7 @@ module.exports = {
   addParkingCollection,
   getUtility,
   editUtility,
+  changePassword,
+  getSingleUnit,
+  deleteUnit,
 };

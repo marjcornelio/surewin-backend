@@ -11,10 +11,6 @@ const ParkingCollection = sequelize.define("parking_collection", {
   received_from: {
     type: DataTypes.UUID,
     allowNull: false,
-    references: {
-      model: "users",
-      key: "id",
-    },
   },
   received_amount: {
     type: DataTypes.INTEGER,
