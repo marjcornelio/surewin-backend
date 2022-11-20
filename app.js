@@ -23,7 +23,7 @@ const authRouter = require("./routes/authRoutes");
 const userRouter = require("./routes/userRoutes");
 
 app.get("/", (req, res) => {
-  res.send();
+  res.send("Hello");
 });
 
 app.use("/api/auth", authRouter);
