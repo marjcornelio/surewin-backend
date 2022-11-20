@@ -132,7 +132,7 @@ const addUser = async (req, res) => {
           lastname: lastname,
           password: password,
           email: email,
-          link: `http://localhost:3000/`,
+          link: `http://surewinmarketplace.tech/`,
         }),
       };
       mg.messages().send(data, async function (error, body) {

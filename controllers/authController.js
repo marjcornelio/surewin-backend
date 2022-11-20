@@ -82,7 +82,7 @@ const forgotPassword = async (req, res) => {
       html: compileResetPassword.render({
         firstname: user.firstname,
         lastname: user.lastname,
-        link: `http://localhost:3000/resetpassword/${user.id}/${token}`,
+        link: `http://surewinmarketplace.tech/resetpassword/${user.id}/${token}`,
       }),
     };
     mg.messages().send(data, function (error, body) {
