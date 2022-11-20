@@ -83,6 +83,7 @@ const start = async () => {
     await connectDB.authenticate();
     app.listen(port, console.log("successfully connected to Database"));
   } catch (error) {
+    console.log(error);
     console.log("Something Went Wrong, Please Try Again Later");
   }
 };
