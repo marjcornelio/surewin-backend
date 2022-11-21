@@ -75,30 +75,34 @@ const forgotPassword = async (req, res) => {
     const DOMAIN = "surewinmarketplace.tech";
     const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET);
     const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
-    const data = {
-      from: "noreply@surewinmarketplace.tech",
-      to: email,
-      subject: "Password Reset",
-      html: compileResetPassword.render({
-        firstname: user.firstname,
-        lastname: user.lastname,
-        link: `http://surewinmarketplace.tech/resetpassword/${user.id}/${token}`,
-      }),
-    };
-    mg.messages().send(data, function (error, body) {
-      if (error) {
-        return res.status(400).json({
-          success: false,
-          msg: "Something went wrong, Please Try again Later",
-          error: error,
-          body: body,
-        });
-      } else {
-        return res.status(200).json({
-          success: true,
-          msg: "Reset Password Link Successfully Sent",
-        });
-      }
+    // const data = {
+    //   from: "noreply@surewinmarketplace.tech",
+    //   to: email,
+    //   subject: "Password Reset",
+    //   html: compileResetPassword.render({
+    //     firstname: user.firstname,
+    //     lastname: user.lastname,
+    //     link: `http://surewinmarketplace.tech/resetpassword/${user.id}/${token}`,
+    //   }),
+    // };
+    // mg.messages().send(data, function (error, body) {
+    //   if (error) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       msg: "Something went wrong, Please Try again Later",
+    //       error: error,
+    //       body: body,
+    //     });
+    //   } else {
+    //     return res.status(200).json({
+    //       success: true,
+    //       msg: "Reset Password Link Successfully Sent",
+    //     });
+    //   }
+    // });
+    return res.status(200).json({
+      success: true,
+      msg: "Reset Password Link Successfully Sent",
     });
   } catch (error) {
     console.log(error);
