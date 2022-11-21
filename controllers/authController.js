@@ -74,7 +74,10 @@ const forgotPassword = async (req, res) => {
 
     const DOMAIN = "surewinmarketplace.tech";
     const token = jwt.sign(email, process.env.ACCESS_TOKEN_SECRET);
-    const mg = mailgun({ apiKey: process.env.MAILGUN_API_KEY, domain: DOMAIN });
+    const mg = mailgun({
+      apiKey: process.env.MAILGUN_API_KEY,
+      domain: process.env.MAILGUN_API_BASE_URL,
+    });
     const data = {
       from: "noreply@surewinmarketplace.tech",
       to: email,
