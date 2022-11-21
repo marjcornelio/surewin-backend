@@ -101,6 +101,7 @@ const forgotPassword = async (req, res) => {
       }
     });
   } catch (error) {
+    console.log(error);
     return res.status(400).json({
       success: false,
       msg: "Something went wrong, Please Try again Later",
