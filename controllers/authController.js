@@ -87,10 +87,10 @@ const forgotPassword = async (req, res) => {
     };
     mg.messages().send(data, function (error, body) {
       if (error) {
-        console.log(error);
         return res.status(400).json({
           success: false,
           msg: "Something went wrong, Please Try again Later",
+          error: error,
         });
       } else {
         return res.status(200).json({
@@ -100,10 +100,10 @@ const forgotPassword = async (req, res) => {
       }
     });
   } catch (error) {
-    console.log(error);
     return res.status(400).json({
       success: false,
       msg: "Something went wrong, Please Try again Later",
+      error: error,
     });
   }
 };
