@@ -480,6 +480,7 @@ const deleteTenant = async (req, res) => {
           if (stall.length > 1) {
             stall.map((s) => {
               Unit.update({ status: "vacant" }, { where: { unit_title: s } });
+              console.log(s);
             });
           } else {
             Unit.update(
