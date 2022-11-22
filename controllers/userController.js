@@ -36,7 +36,13 @@ const uploadFnct = function (dest) {
 };
 const upload = async (req, res) => {
   try {
-    res.header("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "PUT,GET,DELETE,PATCH");
+    res.setHeader("Access-Control-Allow-Credentials", true);
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "X-Requested-With,content-type,Origin,Accept,Authorization"
+    );
     const currUpload = uploadFnct(req.params.type);
     currUpload(req, res, (err) => {
       if (err) {
