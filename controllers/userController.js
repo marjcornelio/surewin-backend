@@ -47,7 +47,7 @@ const upload = async (req, res) => {
     currUpload(req, res, (err) => {
       if (err) {
         res.send(err);
-        console.log(error);
+        console.log(err);
       }
       cloudinary.uploader
         .upload(req.file.path, {
