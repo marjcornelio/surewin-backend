@@ -10,7 +10,7 @@ const bodyParser = require("body-parser");
 const cron = require("node-cron");
 const reccur = require("./utils/recurring-invoice");
 
-app.use(cors({ origin: "https://surewinmarketplace.tech" }));
+app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

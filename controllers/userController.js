@@ -40,7 +40,6 @@ const upload = async (req, res) => {
     currUpload(req, res, (err) => {
       if (err) {
         res.send(err);
-        console.log(err);
       }
       cloudinary.uploader
         .upload(req.file.path, {
@@ -477,10 +476,18 @@ const deleteTenant = async (req, res) => {
     if (tenant) {
       Transaction.destroy({ where: { tenant_id: id } }).then(() => {
         Invoice.destroy({ where: { tenant_id: id } }).then(() => {
-          Unit.update(
-            { status: "vacant" },
-            { where: { unit_title: contract.stall } }
-          );
+          const stall = contract.stall.split(",");
+          if (stall.length > 1) {
+            stall.map((s) => {
+              Unit.update({ status: "vacant" }, { where: { unit_title: s } });
+            });
+          } else {
+            Unit.update(
+              { status: "vacant" },
+              { where: { unit_title: contract.stall } }
+            );
+          }
+
           Contract.destroy({ where: { tenant_id: id } }).then(() => {
             Tenant.destroy({ where: { id: id } });
           });
