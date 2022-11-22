@@ -9,6 +9,7 @@ const Utility = require("../models/Utility");
 const sequelize = require("../db/connect");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("../utils/cloudinary");
 
 const multer = require("multer");
 const fs = require("fs");
@@ -32,6 +33,26 @@ const uploadFnct = function (dest) {
   });
   const upload = multer({ storage: storage }).single("file");
   return upload;
+};
+const upload = async (req, res) => {
+  try {
+    const currUpload = uploadFnct(req.params.type);
+    currUpload(req, res, (err) => {
+      if (err) {
+        res.send(err);
+      }
+      cloudinary.uploader
+        .upload(req.file.path, {
+          folder: req.params.type,
+          resource_type: "image",
+        })
+        .then((response) => res.status(201).json({ url: response.url }))
+        .catch((err) => console.log(err));
+      return;
+    });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
 };
 
 const getAllUser = async (req, res) => {
@@ -476,19 +497,7 @@ const deleteTenant = async (req, res) => {
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
-const upload = async (req, res) => {
-  try {
-    const currUpload = uploadFnct(req.params.type);
-    currUpload(req, res, (err) => {
-      if (err) {
-        res.send(err);
-      }
-      return;
-    });
-  } catch (error) {
-    res.json({ success: false, msg: "Something Went Wrong" });
-  }
-};
+
 const editContract = async (req, res) => {
   try {
     const { id } = req.params;
