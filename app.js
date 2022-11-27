@@ -25,10 +25,6 @@ const userRouter = require("./routes/userRoutes");
 app.get("/", (req, res) => {
   res.send("Redd-Amber Surewin Wet and Dry Market");
 });
-
-app.use("/api/auth", authRouter);
-app.use("/api/", userRouter);
-
 //Recurring Payment for Rental and Monthly Billings
 app.post("/recurring-rent", async (req, res) => {
   const response = await reccur.fetchData();
@@ -75,6 +71,9 @@ app.post("/recurring-rent", async (req, res) => {
     });
   }
 });
+
+app.use("/api/auth", authRouter);
+app.use("/api/", userRouter);
 
 const port = process.env.PORT || 5000;
 
