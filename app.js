@@ -23,14 +23,14 @@ const authRouter = require("./routes/authRoutes");
 const userRouter = require("./routes/userRoutes");
 
 app.get("/", (req, res) => {
-  res.send("Hello");
+  res.send("Redd-Amber Surewin Wet and Dry Market");
 });
 
 app.use("/api/auth", authRouter);
 app.use("/api/", userRouter);
 
 //Recurring Payment for Rental and Monthly Billings
-cron.schedule("0 0 0 * * *", async () => {
+app.post("/recurring-rent", async (req, res) => {
   const response = await reccur.fetchData();
   const tenant = await response.tenant;
   let contract = await response.contract;
