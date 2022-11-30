@@ -35,7 +35,7 @@ const User = sequelize.define(
     },
     user_role: {
       type: DataTypes.ENUM,
-      values: ["admin", "manager", "staff"],
+      values: ["admin", "manager", "parking staff"],
     },
     email: {
       type: DataTypes.STRING,
