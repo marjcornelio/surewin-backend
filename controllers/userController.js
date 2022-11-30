@@ -124,7 +124,7 @@ const addUser = async (req, res) => {
       contact_number,
       user_role,
     } = req.body;
-    if (user_role.toLowerCase() !== "staff") {
+    if (user_role.toLowerCase() !== "parking staff") {
       let password = "";
       let hashedPassword = "";
       if (email) {
