@@ -34,6 +34,12 @@ const Unit = sequelize.define("unit", {
     type: DataTypes.ENUM,
     values: ["vacant", "occupied", "unavailable"],
   },
+    electric_meter: {
+    type: DataTypes.STRING,
+  },
+  water_meter: {
+    type: DataTypes.STRING,
+  },
 });
 
 sequelize
