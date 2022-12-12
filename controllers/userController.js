@@ -662,7 +662,15 @@ const getSingleUnit = async (req, res) => {
 
 const addUnit = async (req, res) => {
   try {
-    const { type, image, description, status, rental_amount } = req.body;
+    const {
+      type,
+      image,
+      description,
+      status,
+      rental_amount,
+      electric_meter,
+      water_meter,
+    } = req.body;
     const unit = await Unit.create({
       type: type,
       unit_title: type + " " + this.id,
@@ -670,6 +678,8 @@ const addUnit = async (req, res) => {
       image: image,
       description: description,
       status: status,
+      electric_meter: electric_meter,
+      water_meter: water_meter,
     }).then((res) => {
       Unit.update(
         { unit_title: type + " " + res.id },
@@ -689,13 +699,23 @@ const addUnit = async (req, res) => {
 const updateUnit = async (req, res) => {
   try {
     const { id } = req.params;
-    const { type, image, description, status, rental_amount } = req.body;
+    const {
+      type,
+      image,
+      description,
+      status,
+      rental_amount,
+      electric_meter,
+      water_meter,
+    } = req.body;
     const unit = await Unit.update(
       {
         type: type,
         rental_amount: rental_amount,
         image: image,
         description: description,
+        electric_meter: electric_meter,
+        water_meter: water_meter,
         status: status,
       },
       { where: { id: id } }
