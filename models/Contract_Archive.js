@@ -1,7 +1,8 @@
 const { Sequelize, DataTypes, Model } = require("sequelize");
+
 const sequelize = require("../db/connect");
 
-const Tenant = sequelize.define("tenant", {
+const Contract_Archive = sequelize.define("contract_archive", {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -30,39 +31,40 @@ const Tenant = sequelize.define("tenant", {
   zip: {
     type: DataTypes.STRING,
   },
-  email: {
+  stall: {
     type: DataTypes.STRING,
   },
-  image: {
+  start_date: {
+    type: DataTypes.DATE,
+  },
+  end_date: {
+    type: DataTypes.DATE,
+  },
+  deposit: {
+    type: DataTypes.INTEGER,
+  },
+  balance: {
+    type: DataTypes.INTEGER,
+  },
+  rental_amount: {
+    type: DataTypes.INTEGER,
+  },
+  rental_frequency: {
+    type: DataTypes.ENUM,
+    values: ["Monthly", "Daily"],
+  },
+  status: {
+    type: DataTypes.ENUM,
+    values: ["Active", "Ended"],
+  },
+  electric_meter: {
     type: DataTypes.STRING,
   },
-  valid_id: {
-    type: DataTypes.STRING,
-  },
-  contact_number: {
-    type: DataTypes.STRING,
-  },
-  username: {
-    type: DataTypes.STRING,
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  user_role: {
-    type: DataTypes.STRING,
-    defaultvalue: "tenant",
-  },
-  account_status: {
+  water_meter: {
     type: DataTypes.STRING,
   },
 });
 
-Tenant.associate = (models) => {
-  Tenant.hasMany(models.Contract);
-  Tenant.hasMany(models.Transaction);
-  Tenant.hasMany(models.Invoice);
-};
 sequelize
   .sync({ alter: true })
   .then(() => {
@@ -72,4 +74,4 @@ sequelize
     console.error("Unable to create table : ");
   });
 
-module.exports = Tenant;
+module.exports = Contract_Archive;

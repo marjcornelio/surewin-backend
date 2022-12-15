@@ -36,14 +36,25 @@ const {
   changePassword,
   getSingleUnit,
   deleteUnit,
+  getAllArchive,
+  permanentdeleteTenant,
+  recoverTenant,
 } = require("../controllers/userController");
 
 router
   .get("/tenants", authenticateToken, getAllTenant)
   .post("/tenants/add", authenticateToken, addTenant)
+  .get("/tenants/archived", authenticateToken, getAllArchive)
   .get("/tenants/:id", authenticateToken, getSingleTenant)
   .patch("/tenants/edit/:id", authenticateToken, editTenant)
-  .delete("/tenants/delete/:id", authenticateToken, deleteTenant);
+  .delete("/tenants/delete/:id", authenticateToken, deleteTenant)
+  .delete(
+    "/tenants/permanentdelete/:id",
+    authenticateToken,
+    permanentdeleteTenant
+  )
+  .patch("/tenants/recover/:id", recoverTenant);
+
 router
   .patch("/lease/edit/:id", authenticateToken, editContract)
   .patch("/lease/end/:id", authenticateToken, endContract);

@@ -466,8 +466,80 @@ const editTenant = async (req, res) => {
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
 };
+const getAllArchive = async (req, res) => {
+  try {
+    const [results, metadata] = await sequelize.query(
+      "SELECT * FROM contracts LEFT OUTER JOIN tenants ON contracts.tenant_id = tenants.id"
+    );
+    const tenants = results.filter(
+      (item) => item.account_status === "archived"
+    );
+    tenants.map((i) => delete i.password && delete i.username);
 
+    res.status(200).json({ success: true, tenants: tenants });
+  } catch (error) {
+    res.json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const recoverTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenant = await Tenant.findOne({ where: { id: id } });
+    if (tenant) {
+      await Tenant.update({ account_status: "active" }, { where: { id: id } });
+
+      return res
+        .status(201)
+        .json({ success: true, msg: "Successfully Recovered" });
+    }
+
+    return res.status(404).json({ success: true, msg: "Data Not Found" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
 const deleteTenant = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenant = await Tenant.findOne({ where: { id: id } });
+    const contract = await Contract.findOne({ where: { tenant_id: id } });
+
+    if (tenant) {
+      await Tenant.update(
+        { account_status: "archived" },
+        { where: { id: id } }
+      );
+      await Contract.update(
+        { status: "Ended" },
+        { where: { id: contract.id } }
+      );
+
+      const stall = contract.stall.split(",");
+      if (stall.length > 1) {
+        stall.map((s) => {
+          Unit.update({ status: "vacant" }, { where: { unit_title: s } });
+          console.log(s);
+        });
+      } else {
+        Unit.update(
+          { status: "vacant" },
+          { where: { unit_title: contract.stall } }
+        );
+      }
+
+      return res
+        .status(201)
+        .json({ success: true, msg: "Successfully Archived" });
+    }
+
+    return res.status(404).json({ success: true, msg: "Data Not Found" });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ success: false, msg: "Something Went Wrong" });
+  }
+};
+const permanentdeleteTenant = async (req, res) => {
   try {
     const { id } = req.params;
     const tenant = await Tenant.findOne({ where: { id: id } });
@@ -520,12 +592,12 @@ const editContract = async (req, res) => {
       water,
       internet,
       status,
-      unit,
       electric_meter,
       water_meter,
       electric_initial_reading,
       water_initial_reading,
     } = req.body;
+
     const contract = await Contract.update(
       {
         stall: stall.join(),
@@ -536,24 +608,28 @@ const editContract = async (req, res) => {
         electric: electric,
         water: water,
         internet: internet,
-        status: status,
         electric_meter: electric_meter,
         water_meter: water_meter,
         electric_initial_reading: electric_initial_reading,
         water_initial_reading: water_initial_reading,
       },
       { where: { id: id } }
-    );
-    if (status === "Ended") {
-      await Unit.update(
-        {
-          status: "vacant",
-        },
-        { where: { id: unit.id } }
-      );
-    }
+    ).then(async (res) => {
+      if (status === "Renew") {
+        await Contract.update({ status: "Active" }, { where: { id: id } });
+      }
+      if (status === "Renew") {
+        stall.map(async (s) => {
+          await Unit.update(
+            { status: "occupied" },
+            { where: { unit_title: s } }
+          );
+        });
+      }
+    });
     res.status(201).json({ success: true, msg: "Successfully Edited" });
   } catch (error) {
+    console.log(error);
     console.log(error);
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
   }
@@ -833,7 +909,7 @@ const addInvoice = async (req, res) => {
 
 const addTransaction = async (req, res) => {
   try {
-    const { tenant_id, amount, description, invoice, payment_method } =
+    const { tenant_id, amount, description, invoice, payment_method, id } =
       req.body;
 
     if (Array.isArray(invoice)) {
@@ -866,6 +942,7 @@ const addTransaction = async (req, res) => {
       );
     }
     await Transaction.create({
+      id: id,
       tenant_id: tenant_id,
       invoice_id: Array.isArray(invoice)
         ? invoice.map((i) => i.id).join()
@@ -874,10 +951,13 @@ const addTransaction = async (req, res) => {
       payment_date: Date.now(),
       description: description,
       payment_method: payment_method,
+    }).then(async (result) => {
+      res.status(201).json({
+        success: true,
+        msg: "Transaction Added Successfully",
+        id: await result.id,
+      });
     });
-    res
-      .status(201)
-      .json({ success: true, msg: "Transaction Added Successfully" });
   } catch (error) {
     res.json({ success: false, msg: "Something Went Wrong" });
   }
@@ -979,4 +1059,7 @@ module.exports = {
   changePassword,
   getSingleUnit,
   deleteUnit,
+  getAllArchive,
+  permanentdeleteTenant,
+  recoverTenant,
 };

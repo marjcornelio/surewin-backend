@@ -4,8 +4,7 @@ const sequelize = require("../db/connect");
 
 const Transaction = sequelize.define("transaction", {
   id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
+    type: DataTypes.STRING,
     primaryKey: true,
   },
   tenant_id: {
