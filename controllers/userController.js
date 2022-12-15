@@ -992,7 +992,7 @@ const addParkingCollection = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      msg: "Successfully Added Parkign Collection",
+      msg: "Successfully Added Parking Collection",
     });
   } catch (error) {
     res.status(400).json({ success: false, msg: "Something Went Wrong" });
